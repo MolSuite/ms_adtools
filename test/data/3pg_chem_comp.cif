@@ -1,0 +1,118 @@
+data_3pg
+_entry.id 3pg
+
+_cell.entry_id 3pg
+_cell.length_a 1
+_cell.length_b 1
+_cell.length_c 1
+_cell.angle_alpha 90
+_cell.angle_beta 90
+_cell.angle_gamma 90
+
+_symmetry.entry_id 3pg
+_symmetry.space_group_name_H-M ''
+
+loop_
+_entity.id
+_entity.type
+3PG! non-polymer
+
+
+
+
+loop_
+_chem_comp.id
+_chem_comp.type
+3PG .
+
+loop_
+_struct_asym.id
+_struct_asym.entity_id
+Ax1 3PG!
+
+
+
+loop_
+_atom_type.symbol
+C
+O
+P
+
+
+loop_
+_atom_site.group_PDB
+_atom_site.id
+_atom_site.type_symbol
+_atom_site.label_atom_id
+_atom_site.label_alt_id
+_atom_site.label_comp_id
+_atom_site.label_asym_id
+_atom_site.label_entity_id
+_atom_site.label_seq_id
+_atom_site.pdbx_PDB_ins_code
+_atom_site.Cartn_x
+_atom_site.Cartn_y
+_atom_site.Cartn_z
+_atom_site.occupancy
+_atom_site.B_iso_or_equiv
+_atom_site.pdbx_formal_charge
+_atom_site.auth_seq_id
+_atom_site.auth_asym_id
+_atom_site.pdbx_PDB_model_num
+HETATM 1 C C1 . 3PG Ax1 3PG! . ? 24.605 -6.221 10.041 1 0 ? 418 A 1
+HETATM 2 O O1 . 3PG Ax1 3PG! . ? 24.052 -5.073 9.846 1 0 ? 418 A 1
+HETATM 3 O O2 . 3PG Ax1 3PG! . ? 24.762 -6.666 11.242 1 0 ? 418 A 1
+HETATM 4 C C2 . 3PG Ax1 3PG! . ? 25.074 -7.052 8.848 1 0 ? 418 A 1
+HETATM 5 O O3 . 3PG Ax1 3PG! . ? 26.466 -6.865 8.643 1 0 ? 418 A 1
+HETATM 6 C C3 . 3PG Ax1 3PG! . ? 24.311 -6.631 7.585 1 0 ? 418 A 1
+HETATM 7 O O1P . 3PG Ax1 3PG! . ? 24.619 -5.27 7.22 1 0 ? 418 A 1
+HETATM 8 P P . 3PG Ax1 3PG! . ? 24.213 -4.733 5.765 1 0 ? 418 A 1
+HETATM 9 O O2P . 3PG Ax1 3PG! . ? 22.839 -4.184 5.792 1 0 ? 418 A 1
+HETATM 10 O O3P . 3PG Ax1 3PG! . ? 24.267 -5.841 4.785 1 0 ? 418 A 1
+HETATM 11 O O4P . 3PG Ax1 3PG! . ? 25.148 -3.668 5.338 1 0 ? 418 A 1
+
+loop_
+_chem_comp_atom.comp_id
+_chem_comp_atom.atom_id
+_chem_comp_atom.type_symbol
+3PG C1 C
+3PG O1 O
+3PG O2 O
+3PG C2 C
+3PG O3 O
+3PG C3 C
+3PG O1P O
+3PG P P
+3PG O2P O
+3PG O3P O
+3PG O4P O
+3PG HO2 H
+3PG H2 H
+3PG HO3 H
+3PG H31 H
+3PG H32 H
+3PG HOP3 H
+3PG HOP4 H
+
+loop_
+_chem_comp_bond.comp_id
+_chem_comp_bond.atom_id_1
+_chem_comp_bond.atom_id_2
+_chem_comp_bond.value_order
+3PG C1 O1 DOUB
+3PG C1 O2 SING
+3PG C1 C2 SING
+3PG O2 HO2 SING
+3PG C2 O3 SING
+3PG C2 C3 SING
+3PG C2 H2 SING
+3PG O3 HO3 SING
+3PG C3 O1P SING
+3PG C3 H31 SING
+3PG C3 H32 SING
+3PG O1P P SING
+3PG P O2P DOUB
+3PG P O3P SING
+3PG P O4P SING
+3PG O3P HOP3 SING
+3PG O4P HOP4 SING
