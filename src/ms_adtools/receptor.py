@@ -330,7 +330,7 @@ def _line(serial, a, q, t):
 
 
 def prepare_receptor(path, repairs="", charges=None, cleanup="nphs_lps_waters_nonstdres",
-                     delete_single_nonstd_residues=False, zinc=False, ccd=False, ccd_metal_charges=False):
+                     delete_single_nonstd_residues=False, zinc=False, ccd=False, ccd_metal_charges=False, ion_charges=False):
     """PDBQT text of a receptor file (PDB, mmCIF, PQR, PDBQT, mol2), with prepare_receptor4.py's options.
 
     ``charges``: None keeps the charges a PQR, PDBQT or mol2 brings and computes Gasteiger's for
@@ -351,7 +351,11 @@ def prepare_receptor(path, repairs="", charges=None, cleanup="nphs_lps_waters_no
     CCD component, by bond orders, fetched once into ~/.molsuite/cache/ccd; ``ccd="dir"`` reads
     <RESNAME>.cif templates from a directory instead. An mmCIF receptor that carries its own
     chem_comp tables (PDBe updated mmCIF) is its own template. ``ccd_metal_charges`` also charges
-    a component's metal (heme Fe +2). See ``ms_adtools.ccd``."""
+    a component's metal (heme Fe +2). See ``ms_adtools.ccd``.
+
+    ``ion_charges`` gives bare metal ions (MG, MN, CA, FE, FE2, CU, CU1) their formal charge
+    instead of ADT's 0; zinc stays at 0 (AutoDock4Zn). Only the electrostatics change: a point
+    charge has no coordination geometry. See ``ms_adtools.ccd.ION_CHARGES``."""
     atoms, bonds = read_receptor(path)
     if bonds is not None:  # ponytail: the cleanup drops atoms, so a mol2's own bonds give way to distances
         bonds = None if any(a["resname"] in _WATERS for a in atoms) or "lps" in cleanup else bonds
@@ -365,7 +369,7 @@ def prepare_receptor(path, repairs="", charges=None, cleanup="nphs_lps_waters_no
         if charges == "gasteiger":
             raise ValueError("a PDBQT cannot be charged again (its non-polar hydrogens are merged): use the PDB")
         return _finish("\n".join(_line(n + 1, a, a["q"], a["t"]) for n, a in enumerate(atoms)) + "\n",
-                       path, zinc, ccd, ccd_metal_charges)
+                       path, zinc, ccd, ccd_metal_charges, ion_charges)
     add_h = "hydrogens" in repairs and not ("checkhydrogens" in repairs and any(a["el"] == "H" for a in atoms))
     mol = _chemistry(atoms, bonds, add_h)
     q = np.array([a["q"] for a in atoms] + [0.0] * (mol.GetNumAtoms() - len(atoms))) \
@@ -397,10 +401,10 @@ def prepare_receptor(path, repairs="", charges=None, cleanup="nphs_lps_waters_no
             a = mol.GetAtomWithIdx(k)
             t = _ad4_type(a) or a.GetSymbol()
             out.append(_line(len(out) + 1, rows[k], q[k], t))
-    return _finish("\n".join(out) + "\n", path, zinc, ccd, ccd_metal_charges)
+    return _finish("\n".join(out) + "\n", path, zinc, ccd, ccd_metal_charges, ion_charges)
 
 
-def _finish(pdbqt, path, zinc, ccd, ccd_metal_charges):
+def _finish(pdbqt, path, zinc, ccd, ccd_metal_charges, ion_charges):
     if ccd:
         from ms_adtools.ccd import apply_ccd
         pdbqt = apply_ccd(pdbqt, None if ccd is True else ccd, structure=path, metal_charges=ccd_metal_charges)

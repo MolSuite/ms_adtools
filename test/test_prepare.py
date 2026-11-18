@@ -280,3 +280,36 @@ def test_cli_writes_ligand_receptor_pair_and_poses(tmp_path):
     assert (tmp_path / "x_flex.pdbqt").read_text().count("BEGIN_RES") == 2
     assert main(["poses", str(DATA / "1iep_flex_vina_out.pdbqt"), "-o", str(tmp_path / "p.sdf")]) == 0
     assert (tmp_path / "p.sdf").read_text().count("$$$$") == 3
+
+
+def _cofactor_pdb(code, path, drop=False):
+    from ms_adtools.templates import TEMPLATES
+    smiles, names, _ = TEMPLATES[code]
+    mol = Chem.AddHs(Chem.MolFromSmiles(smiles))
+    AllChem.EmbedMolecule(mol, randomSeed=7)
+    xyz = mol.GetConformer().GetPositions()
+    gone = next(i for i, a in enumerate(mol.GetAtoms()) if a.GetSymbol() == "O") if drop else None
+    rows = ["HETATM%5d %-4s %3s A   1    %8.3f%8.3f%8.3f  1.00  0.00          %2s"
+            % (i + 1, n if len(n) == 4 else " " + n, code, *xyz[i], mol.GetAtomWithIdx(i).GetSymbol())
+            for i, n in enumerate(names) if i != gone]
+    path.write_text("\n".join(rows) + "\nEND\n")
+    return Chem.GetFormalCharge(mol)
+
+
+@pytest.mark.parametrize("code", ["ATP", "HEM", "NAD", "SAM", "TPP"])
+def test_cofactor_templates_need_no_download(code, tmp_path, monkeypatch):
+    monkeypatch.setenv("MOLSUITE_OFFLINE", "1")
+    charge = _cofactor_pdb(code, tmp_path / "c.pdb")
+    pdbqt = prepare_receptor(str(tmp_path / "c.pdb"), ccd=True)
+    assert sum(float(l[70:76]) for l in pdbqt.splitlines() if l.startswith("HETATM")) == pytest.approx(charge, abs=0.01)
+    _cofactor_pdb(code, tmp_path / "c.pdb", drop=True)  # an oxygen missing: its charge is lost
+    with pytest.warns(UserWarning, match="not a whole number"):
+        prepare_receptor(str(tmp_path / "c.pdb"), ccd=True)
+
+
+def test_ion_charges_leave_zinc_alone():
+    from ms_adtools.ccd import charge_ions
+    line = "HETATM    1 %-4s %-3s A 401      10.000  10.000  10.000  1.00  0.00     0.000 %s"
+    text = charge_ions("\n".join(line % (n, n, t) for n, t in (("MG", "Mg"), ("ZN", "Zn"), ("FE2", "Fe"))))
+    assert [float(l[70:76]) for l in text.splitlines()] == [2.0, 0.0, 2.0]
+    assert [l[77:].strip() for l in text.splitlines()] == ["Mg", "Zn", "Fe"]

@@ -116,6 +116,45 @@ def template(block, code=None):
     return mol, [a[0] for a in atoms if a[0] not in metal], metals
 
 
+def smiles_template(smiles, names, metals):
+    """template()'s triple from a ``templates.TEMPLATES`` entry: SMILES with its heavy atoms named."""
+    mol = Chem.AddHs(Chem.MolFromSmiles(smiles))  # hydrogens go last, unnamed: _apply matches them by their atom
+    return mol, list(names) + [None] * (mol.GetNumAtoms() - len(names)), dict(metals)
+
+
+def _component(resname, where, own, comps):
+    """Template of a residue: a file in ``where``, else the built-in pH-7 one, else the receptor
+    mmCIF's own tables, else the CCD (cached); None if there is none."""
+    from ms_adtools.templates import TEMPLATES
+    path = component_file(resname, where) if where is not None else None
+    if path is None and resname in TEMPLATES:
+        return smiles_template(*TEMPLATES[resname])
+    if path is None and resname in comps:
+        return template(own, resname)
+    path = path or (component_file(resname) if where is None else None)
+    return template(gemmi.cif.read(str(path)).sole_block()) if path else None
+
+
+#: Formal charges of bare metal ions, by residue name (FE is Fe(III), CU1 Cu(I)). Zinc is not
+#: here: AutoDock4Zn was calibrated with it at 0 and its TZ pseudo-atoms carrying the binding.
+ION_CHARGES = {"MG": 2, "MN": 2, "CA": 2, "FE": 3, "FE2": 2, "CU": 2, "CU1": 1}
+
+
+def charge_ions(pdbqt):
+    """Receptor PDBQT with each one-atom residue of ``ION_CHARGES`` given its formal charge.
+    ponytail: a point charge, no coordination geometry; the protein's charges were computed without it."""
+    lines = pdbqt.splitlines()
+    rows = {}
+    for n, l in enumerate(lines):
+        if l.startswith(("ATOM", "HETATM")):
+            rows.setdefault((l[21], l[22:27], l[17:20].strip()), []).append(n)
+    for (_, _, resname), ns in rows.items():
+        if len(ns) == 1 and resname in ION_CHARGES:
+            l = lines[ns[0]]
+            lines[ns[0]] = "%s%6.3f %-2s" % (l[:70], ION_CHARGES[resname], l[77:].strip())
+    return "\n".join(lines) + "\n"
+
+
 _ACID_H = Chem.MolFromSmarts("[#1]-[OX2]-[P,$([#6,#16]=O)]")  # H of a phosphate, carboxylic or sulfonic acid
 
 
@@ -184,8 +223,10 @@ def _apply(lines, mol, names, metals, metal_charges=False):
 
 def apply_ccd(pdbqt, where=None, structure=None, metal_charges=False):
     """Receptor PDBQT with each non-standard residue typed and charged from its chemical component:
-    the chem_comp tables of ``structure`` (the receptor's mmCIF) when it has them, else
-    ``component_file(resname, where)``; residues without a usable component keep their values.
+    ``where/<RESNAME>.cif``, else the built-in pH-7 template, else the chem_comp tables of
+    ``structure`` (the receptor's mmCIF), else the CCD (cached; not when ``where`` is given);
+    residues without a usable component keep their values, with a warning when it cannot be
+    applied. A residue whose net charge comes out fractional (atoms missing) is warned about too.
     ``metal_charges`` also gives a metal of the component (heme Fe) the charge its bonds took."""
     lines = pdbqt.splitlines()
     groups = {}
@@ -200,22 +241,27 @@ def apply_ccd(pdbqt, where=None, structure=None, metal_charges=False):
     for (chain, num, resname), rows in groups.items():
         if len(rows) == 1:  # ions: the single atom is right as it is
             continue
+        where_ = f"{resname} {chain.strip()}{num.strip()}"
         if resname not in cache:
             try:
-                if resname in comps:
-                    cache[resname] = template(own, resname)
-                else:
-                    path = component_file(resname, where)
-                    cache[resname] = template(gemmi.cif.read(str(path)).sole_block()) if path else None
+                cache[resname] = _component(resname, where, own, comps)
             except Exception as e:  # ponytail: an unusable component (odd valences) keeps the receptor's chemistry
                 warnings.warn(f"CCD {resname}: {e}; the receptor's types and charges kept")
                 cache[resname] = None
         if cache[resname] is None:
             continue
-        got = _apply([lines[n] for n in rows], *cache[resname], metal_charges=metal_charges)
-        if got is None:
-            warnings.warn(f"{resname} {chain}{num.strip()}: too few atoms named as in its CCD component; the receptor's kept")
+        try:
+            got = _apply([lines[n] for n in rows], *cache[resname], metal_charges=metal_charges)
+        except ValueError as e:  # an element AD4 has no type for (selenomethionine)
+            warnings.warn(f"{where_}: {e}; the receptor's types and charges kept")
             continue
+        if got is None:
+            warnings.warn(f"{where_}: too few atoms named as in its CCD component; the receptor's kept")
+            continue
+        net = sum(float(l[70:76]) for l in got)
+        if abs(net - round(net)) > 0.05:
+            warnings.warn(f"{where_}: net charge {net:+.2f}, not a whole number: atoms of its component "
+                          "are missing from the structure, so its charges are off by the remainder")
         for n, l in zip(rows, got):
             lines[n] = l
     return "\n".join(lines) + "\n"
