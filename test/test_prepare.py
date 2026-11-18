@@ -305,6 +305,9 @@ def test_cofactor_templates_need_no_download(code, tmp_path, monkeypatch):
     _cofactor_pdb(code, tmp_path / "c.pdb", drop=True)  # an oxygen missing: its charge is lost
     with pytest.warns(UserWarning, match="not a whole number"):
         prepare_receptor(str(tmp_path / "c.pdb"), ccd=True)
+    (tmp_path / "c.pdb").write_text((tmp_path / "c.pdb").read_text().replace(code, "ZZZ"))
+    with pytest.warns(UserWarning, match="ZZZ: no chemical component"):
+        prepare_receptor(str(tmp_path / "c.pdb"), ccd=True)
 
 
 def test_ion_charges_leave_zinc_alone():

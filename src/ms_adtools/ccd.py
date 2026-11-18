@@ -245,6 +245,8 @@ def apply_ccd(pdbqt, where=None, structure=None, metal_charges=False):
         if resname not in cache:
             try:
                 cache[resname] = _component(resname, where, own, comps)
+                if cache[resname] is None:
+                    warnings.warn(f"{resname}: no chemical component (unknown or offline); typed from its geometry")
             except Exception as e:  # ponytail: an unusable component (odd valences) keeps the receptor's chemistry
                 warnings.warn(f"CCD {resname}: {e}; the receptor's types and charges kept")
                 cache[resname] = None
