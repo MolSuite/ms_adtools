@@ -310,9 +310,13 @@ def test_cofactor_templates_need_no_download(code, tmp_path, monkeypatch):
         prepare_receptor(str(tmp_path / "c.pdb"), ccd=True)
 
 
-def test_ion_charges_leave_zinc_alone():
+def test_ion_charges_leave_zinc_alone(tmp_path):
     from ms_adtools.ccd import charge_ions
     line = "HETATM    1 %-4s %-3s A 401      10.000  10.000  10.000  1.00  0.00     0.000 %s"
     text = charge_ions("\n".join(line % (n, n, t) for n, t in (("MG", "Mg"), ("ZN", "Zn"), ("FE2", "Fe"))))
     assert [float(l[70:76]) for l in text.splitlines()] == [2.0, 0.0, 2.0]
     assert [l[77:].strip() for l in text.splitlines()] == ["Mg", "Zn", "Fe"]
+    mg = tmp_path / "mg.pdbqt"  # the option reaches it
+    mg.write_text((DATA / "zn_site.pdbqt").read_text().replace("ZN    ZN", "MG    MG").replace("Zn", "Mg"))
+    pdbqt = prepare_receptor(str(mg), ion_charges=True)
+    assert [float(l[70:76]) for l in pdbqt.splitlines() if l[17:20] == " MG"] == [2.0]

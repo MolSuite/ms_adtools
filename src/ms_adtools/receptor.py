@@ -405,6 +405,9 @@ def prepare_receptor(path, repairs="", charges=None, cleanup="nphs_lps_waters_no
 
 
 def _finish(pdbqt, path, zinc, ccd, ccd_metal_charges, ion_charges):
+    if ion_charges:
+        from ms_adtools.ccd import charge_ions
+        pdbqt = charge_ions(pdbqt)
     if ccd:
         from ms_adtools.ccd import apply_ccd
         pdbqt = apply_ccd(pdbqt, None if ccd is True else ccd, structure=path, metal_charges=ccd_metal_charges)
