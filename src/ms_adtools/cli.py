@@ -56,7 +56,7 @@ def _ligand(a):
 def _receptor(a):
     from ms_adtools import prepare_receptor
     text = prepare_receptor(a.input, repairs=a.repairs, charges=a.charges, cleanup=a.cleanup,
-                            zinc="auto" if a.zinc else False, ccd=a.ccd)
+                            zinc="auto" if a.zinc else False, ccd=a.ccd, ion_charges=a.ion_charges)
     Path(a.output or a.input.with_suffix(".pdbqt")).write_text(text)
     return 0
 
@@ -103,6 +103,7 @@ def main(argv=None):
     p.add_argument("--cleanup", default="nphs_lps_waters_nonstdres", help="as prepare_receptor4.py -U")
     p.add_argument("--zinc", action="store_true", help="add AutoDock4Zn TZ pseudo-atoms")
     p.add_argument("--ccd", action="store_true", help="type non-standard residues from their CCD component")
+    p.add_argument("--ion-charges", action="store_true", help="give bare metal ions their formal charge (zinc stays 0)")
     p.set_defaults(run=_receptor)
 
     p = sub.add_parser("flexreceptor", help="rigid and flexible PDBQT pair for flexible-residue docking")

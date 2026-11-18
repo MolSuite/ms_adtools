@@ -22,7 +22,7 @@ and RDKit as the only requirements: a worker that prepares a receptor peaks at a
 ```bash
 ms_adtools ligand lig.sdf -o lig.pdbqt              # SDF, MOL, mol2, or .smi (embedded in 3D)
 ms_adtools ligand library.smi -o library/           # several molecules: one PDBQT each
-ms_adtools receptor 1iep.pdb -o 1iep.pdbqt          # --repairs hydrogens, --zinc, --ccd, --charges
+ms_adtools receptor 1iep.pdb -o 1iep.pdbqt          # --repairs hydrogens, --zinc, --ccd, --ion-charges, --charges
 ms_adtools flexreceptor 1iep.pdbqt -r "A:239,315"   # writes 1iep_rigid.pdbqt + 1iep_flex.pdbqt
 ms_adtools poses docked.pdbqt -o poses.sdf          # or a .dlg; one record per pose, with its score
 ```
@@ -62,7 +62,7 @@ poses = pdbqt_to_rdkit(docked_text)                 # one conformer per MODEL, `
 |---|---|
 | `prepare_ligand(mol, open_macrocycles=False, hydrate=False, flexible_amides=False, ...)` | ligand PDBQT text |
 | `prepare_reactive_ligand(mol, smarts, idx=0, ...)` | ligand PDBQT with the reactive atom typed |
-| `prepare_receptor(path, repairs="", charges=None, cleanup=..., zinc=False, ccd=False)` | receptor PDBQT text |
+| `prepare_receptor(path, repairs="", charges=None, cleanup=..., zinc=False, ccd=False, ion_charges=False)` | receptor PDBQT text |
 | `prepare_flexreceptor(path, residues, reactive=())` | `(rigid, flex)` PDBQT texts |
 | `pdbqt_to_rdkit(text)` | RDKit molecule, one conformer per pose |
 | `dlg_to_pdbqt(text, cluster_leads=True)` | PDBQT poses of an AutoDock4/AutoDock-GPU DLG |
@@ -71,6 +71,9 @@ poses = pdbqt_to_rdkit(docked_text)                 # one conformer per MODEL, `
 
 `ms_adtools.reactive.reactive_config` writes the config of reactive docking;
 `ms_adtools.zinc.PARAMETERS` is the `AD4Zn.dat` that autogrid4 needs for AutoDock4Zn maps.
+With `ccd=True`, the common cofactors (`ms_adtools.templates.COFACTORS`: ATP, NAD, FAD, HEM, SAM, ...)
+use built-in templates at pH 7, with no download; other non-standard residues are fetched from
+the CCD once. `ion_charges=True` gives bare Mg, Mn, Ca, Fe and Cu ions their formal charge (zinc stays 0).
 Each function's docstring has the details.
 
 ## Speed and memory
